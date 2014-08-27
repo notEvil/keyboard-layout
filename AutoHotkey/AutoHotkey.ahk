@@ -1,6 +1,6 @@
 
 ; general
-SendMode , Input
+SendMode, Input
 
 
 ; suspend AHK
@@ -10,65 +10,89 @@ LWin & a::Suspend
 ; Escape -> Tab -> Ctrl -> CapsLock -> Escape
 $Escape::Capslock
 $Tab::Escape
-$Capslock::Ctrl
+$Capslock::LCtrl
 $LCtrl::Tab
-$\::Enter
+\::Enter
+
+
+
+; QWERTY -> Colemak
+$e::f
+$r::p
+$t::g
+$y::j
+$u::l
+$i::u
+$o::y
+$p::;
+$s::r
+$d::s
+$f::t
+$g::d
+$j::n
+$k::e
+$l::i
+$;::o
+$n::k
+
 
 
 ; short physical caps lock without additional key: backspace
 ; otherwise: ctrl
 $Capslock::
-  send {Ctrl down}
+  Send, {LCtrl down}
   CapslockDown := A_TickCount
   Return
 $Capslock up::
-  send {Ctrl up}
+  Send, {LCtrl up}
   if ((A_PriorKey == "CapsLock") and ((A_TickCount - CapslockDown) < 200))
-    send {Backspace}
-  return
+    Send, {Backspace}
+  Return
+  
+
 
 
 
 :*?c:ae::
 {
   str = ä
-  goto HotStrings
+  Goto, HotStrings
 }
 
 :*?c:oe::
 {
   str = ö
-  goto HotStrings
+  Goto, HotStrings
 }
 
 :*?c:ue::
 {
   str = ü
-  goto HotStrings
+  Goto, HotStrings
 }
 
 :*?c:AE::
 {
   str = Ä
-  goto HotStrings
+  Goto, HotStrings
 }
 
 :*?c:OE::
 {
   str = Ö
-  goto HotStrings
+  Goto, HotStrings
 }
 
 :*?c:UE::
 {
   str = Ü
-  goto HotStrings
+  Goto, HotStrings
 }
 
 :*?c:SS::
 {
-  str = ß
-  goto HotStrings
+  str = ß          
+  Goto, HotStrings
 }
 
 
@@ -88,8 +112,20 @@ HotStrings:
   IfInString, ErrorLevel, EndKey:
   {
     l = Strlen(str) - rmTrigger
-    Send % "{BS " l "}" nHotKey
+    Send, % "{BS " l "}" nHotKey
   }
   Exit
 
+
+
+; not in use anymore
+RegisterCtrlKeys:
+  Loop 26
+    HotKey, % "^" Chr(A_Index+96) " up", SendCtrlKey
+  Return
+
+SendCtrlKey:
+  StringTrimRight, nHotKey, A_ThisHotkey, 3
+  Send, {Blind}%nHotKey%
+  Return
 
