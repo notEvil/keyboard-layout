@@ -16,7 +16,7 @@ $Ctrl::AnyKey("{Tab}", "`t")
 $*\::AnyKey("{Enter}", "`n")
 
 
-; main keys 
+; main keys
 $*a::AnyKey("a", "a")
 $*b::AnyKey("b", "b")
 $*c::AnyKey("c", "c")
@@ -152,7 +152,52 @@ $*NumpadPgUp::AnyKey("{NumpadPgUp}", "CL")
 
 
 
+/*
+key   .. key which should be sent
+value .. character for string matching
 
+if any modifier is set: send key and return immediately
+
+'transs' is the sequence of transition definitions (["from" , "to"]) to work with
+AnyKey keeps track of new, partially complete and already performed transitions
+'active' is a sequence of (partially) complete transitions
+  item type: [passive, start, len, trans. definition]
+  passive .. number of keys since this (part.)comp. transition is passive
+             0 means active
+  start   .. birthday
+  len     .. matching len
+  trans. definition .. item of transs
+'pos' is time/clock
+
+on next key
+- check for initial match for every transition definition
+-- on match: add to 'active' with 'len' set to 0
+- for each item in 'active'
+-- if 'passive': increment 'passive', else
+-- check for match
+  - matches:
+  -- increment 'len'
+  -- if complete: perform replace, set 'replace' to skip subsequent
+  - else: set 'passive' to 1
+- burry dead items of 'active' (see histLimit)
+- if no replace op happened: send key
+
+special values:
+- "BS"
+-- for each item in 'active'
+  - if 'passive': decrement 'passive', else
+  - decrement 'len'
+  - if 'len' is 0: kill item
+-- send BS
+
+- "CL"
+-- clear 'active', reset time
+-- send key if specified
+
+- "SP"
+-- for each item in 'active': increment passive
+-- send key if specified
+*/
 AnyKey(key, value)
 {
   if (GetKeyState("Ctrl")  or  GetKeyState("LAlt")  or  GetKeyState("LWin"))
@@ -163,8 +208,8 @@ AnyKey(key, value)
 
   static histLimit := 20
 
-  static transs := [["ae", "ä"], ["oe", "ö"], ["ue", "ü"], ["euer", "euer"], ["AE", "Ä"], ["OE", "Ö"], ["UE", "Ü"], ["SS", "ß"], ["EUR", "€"], ["alue", "alue"]]
-  static cTranss := 10
+  static transs := [["ae", "ä"], ["oe", "ö"], ["does", "does"], ["ue", "ü"], ["euer", "euer"], ["alue", "alue"], ["que", "que"], ["AE", "Ä"], ["OE", "Ö"], ["UE", "Ü"], ["SS", "ß"], ["EUR", "€"]]
+  static cTranss := 12
 
   static active := []
   static cActive := 0
@@ -188,7 +233,7 @@ AnyKey(key, value)
 
       len := item[3]
       len -= 1
-      
+
       if (len)
       {
         item[3] := len
@@ -209,20 +254,20 @@ AnyKey(key, value)
     cActive := 0
     pos := 0
 
-    if (key)                  
+    if (key)
     {
       Send, {Blind}%key%
     }
-    
+
     Return
   }
-  
+
   if (value == "SP")
   {
     Loop %cActive%
     {
       item := active[A_Index]
-      
+
       item[1] += 1
     }
 
@@ -231,7 +276,7 @@ AnyKey(key, value)
       pos += 1
       Send, {Blind}%key%
     }
-    
+
     Return
   }
 
@@ -253,7 +298,7 @@ AnyKey(key, value)
   dropPassive := 0
   replace := 1
   sendKey := 1
-  
+
   ; check actives
   Loop %cActive%
   {
@@ -270,7 +315,7 @@ AnyKey(key, value)
         dropPassive := 1
       }
       Continue
-    }      
+    }
 
     len := item[3]
     a := item[4][1]
@@ -279,11 +324,11 @@ AnyKey(key, value)
     {
       len += 1
       item[3] := len
-      
+
       if (StrLen(a) = len  and  replace)
       {
         replace := 0 ;  first come, first serve
-        
+
         c := pos - item[2] ;  pos - start pos
         if (c)
         {
@@ -329,4 +374,3 @@ AnyKey(key, value)
     pos += 1
   }
 }
-
